@@ -24,6 +24,7 @@ Web 版 Claude では `Task` ツールでサブエージェントを起動でき
 | nami-subsidy-validator.md | 助成金ロジック検証（koso-navi 専用） |
 | robin-schema-guard.md | DB スキーマとコードの整合性検証 |
 | sanji-ui-checker.md | UI 崩れ・主要動線・レスポンシブチェック |
+| franky-build-checker.md | TypeScript / Next.js / Supabase ビルド前チェック |
 
 ## 注意
 
