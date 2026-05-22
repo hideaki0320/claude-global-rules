@@ -45,9 +45,22 @@ model: sonnet
 - 空配列リテラル `[]` を初期値にして push しているのに型注釈が無い → never[] になる
 - discriminated union の判定後に「全部 never」になるパターン
 
-### A-3. null / undefined チェック
+### A-3. null / undefined チェック・型抑制 workaround
 - optional chaining 抜け（`obj.field.subfield` → `obj?.field?.subfield`）
-- 非 null 表明 `!` の濫用を検出（型保証なしに `!` を付けていないか）
+- 以下の **TypeScript エラー抑制** workaround を全て検出 (1 件 1 件理由を確認):
+  - `!` (non-null assertion) — 型保証なしの濫用
+  - `as any` — 型情報を捨てる
+  - `as unknown as X` — 強制的な型 cast
+  - `as keyof typeof obj` — 動的キーアクセスの誤魔化し (data.X アクセスで X が存在しない時に黙らせる典型パターン)
+  - `// @ts-ignore` — 次行のエラー無視
+  - `// @ts-expect-error` — エラー予期 (期待通り出ないと逆にエラーになる)
+- 検出 grep:
+  ```bash
+  grep -rnE "\bas any\b|as unknown as|as keyof typeof|@ts-ignore|@ts-expect-error|[a-zA-Z_]+!\." src/ \
+    --include="*.ts" --include="*.tsx" --exclude-dir=node_modules
+  ```
+- いずれも **「コンパイラを黙らせる」目的で使われている可能性大**。
+  本当に必要か、根本原因 (型定義不足) を直すべきか、報告に含める。
 
 ## B. Next.js App Router の境界
 

@@ -68,6 +68,64 @@ model: sonnet
 - npm audit の結果サマリー
 - 総合評価: 安全 / 条件付き安全 / 要修正
 
+# 必須実行ステップ (作業開始時に必ず実行)
+
+## Step 0: Supabase advisor 全件チェック
+
+セキュリティチェックを開始する前に、必ず以下を実行する:
+
+```
+mcp__supabase__get_advisors (type: "security")
+```
+
+返ってきた lints の中で以下を全件レポートに含める:
+- level: "ERROR" → 致命的として最優先報告
+- level: "WARN" → 重要として報告
+- level: "INFO" → 軽微として報告 (ただし RLS 関連 INFO は対応推奨)
+
+特に以下のアドバイザは見落とすな:
+- `rls_disabled_in_public` → ERROR 級として扱う
+- `rls_enabled_no_policy` → ERROR 級として扱う (INFO 扱いだが実害あり)
+- `anon_security_definer_function_executable` → 高 level として扱う
+- `rls_policy_always_true` → 高 level として扱う
+
+# 具体的な grep パターン (追加チェック項目)
+
+## F. クライアント側機密漏洩
+
+```bash
+# Service role key がクライアント側で使われていないか
+grep -r "SUPABASE_SERVICE_ROLE_KEY" src/app --include="*.tsx" --include="*.ts" \
+  | grep -E "(use client|createBrowserClient)"
+
+# 上記がヒットしたら致命的
+```
+
+## G. クライアント側 DB 直接アクセス
+
+```bash
+# anon publishable client でテーブル直叩きしてる箇所
+grep -rn "createBrowserClient\|createClient.*supabase/client" src/app/portal src/app/admin --include="*.tsx"
+grep -rn "supabase\.from(" src/app/portal src/app/admin --include="*.tsx"
+
+# ヒットした各テーブルが RLS 有効で適切な policy 持っているか確認
+```
+
+## H. ハードコードされた認証情報
+
+```bash
+# 一般的なシークレットパターン
+grep -rE "(sk_live_|pk_live_|sk_test_|whsec_|eyJ[A-Za-z0-9_-]{20,})" src/ \
+  --exclude-dir=node_modules
+```
+
+## I. アクセスパターンの一貫性
+
+同一テーブルが複数の異なるパターンでアクセスされていないかチェック:
+- anon publishable (client direct) vs authenticated server vs service_role
+
+混在は構造的脆弱性の原因。検出したら警告レベルで報告。
+
 # 守るべきルール
 - 発見した秘密情報をチャットに貼らない（ファイル名と行番号のみ）
 - 疑わしいものは全て報告する（過剰検知 > 見逃し）

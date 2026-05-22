@@ -59,6 +59,59 @@ model: sonnet
 ## E. 型定義の整合性
 - lib/types.ts 等の TypeScript 型定義が DB スキーマと一致しているか
 
+## F. SELECT-プロパティ整合性チェック
+
+Supabase の `.select()` で取得していないカラムに、結果オブジェクトを介してアクセスしていないか。
+
+### 検出パターン
+
+```typescript
+// 悪い例 (これを検出する)
+const { data } = await supabase
+  .from('line_contacts')
+  .select('id, stripe_customer_id')  // ← lstep_id を取ってない
+  .single()
+
+if (!data.lstep_id) {  // ← undefined 評価で常に true、バグの温床
+  await supabase.from('line_contacts').delete().eq('id', data.id)
+}
+```
+
+### 検出手順
+
+1. `.from('table_name').select('col_a, col_b, ...')` の SELECT 句から取得カラム名を抽出
+2. その後の `data.X` / `data?.X` / `result.X` アクセスで X が SELECT に含まれているか照合
+3. **特に以下の TypeScript 抑制と組み合わさっている場合は致命的**:
+   - `'X' as keyof typeof obj`
+   - `(obj as any).X`
+   - `obj!.X`
+   - `// @ts-ignore` の直後の `.X` アクセス
+
+### 検出ロジック (grep ベース)
+
+```bash
+# 1. .select() 句を抽出
+grep -nE "\.from\([^)]+\)\.select\([^)]+\)" src/
+
+# 2. 各ファイルで、SELECT 列名と data.X アクセスを照合
+# (手動 or AST ベースで)
+
+# 3. TypeScript 型抑制と組み合わせを優先検出
+grep -rnE "as keyof typeof|as any|@ts-ignore|@ts-expect-error" src/
+```
+
+### 報告例
+
+```
+【致命的】SELECT に無いプロパティアクセス
+- ファイル: src/app/api/line-contacts/import/route.ts:222-241
+  - SELECT: 'id, stripe_customer_id, stripe_email, ...'
+  - アクセス: stripeMatch.lstep_id (231 行目)
+  - 検出: lstep_id が SELECT 句にない、なのに後段で undefined 評価
+  - 影響: !undefined === true で DELETE が常に発火 → データロスの可能性
+  - 修正: SELECT 句に lstep_id を追加する
+```
+
 # 報告フォーマット
 - チェック対象: Supabase プロジェクト名、テーブル一覧
 - 検出した不整合（致命/警告に分類）
