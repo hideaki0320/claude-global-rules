@@ -282,6 +282,117 @@ auto-deploy を無効化したら、**戻すための再有効化 + 手動 deplo
 
 ---
 
+## 15. Supabase RLS の銀の弾はない（2026-05-24 task-triage 編集機能事故から）
+
+**背景**: 業務整理アプリ (task-triage) で `session_submissions` テーブルに INSERT/SELECT/DELETE のポリシーは追加していたが UPDATE を漏らした。受講生の編集機能を実装後、Supabase の RLS が "silent fail"（error 無し・updated_rows = 0）で返すため、フロント側では「保存ボタンを押したけど何も起きない」幽霊バグになった。同じ日に INSERT ポリシー漏れ事故 (sanji-ui-checker が検出) も起こしており、**「同じパターン 2 回」** という構造ミス。
+
+### 15-① 新規テーブル作成時は CRUD 4 ポリシーを必ず同時定義
+
+Supabase は新規テーブルに対し `relrowsecurity=true` を自動付与する。ポリシー無しは **anon/authenticated からの全件ブロック**。最初から CRUD 4 つ書き、不要なものは明示的にコメントで「ここは禁止」と書く：
+
+```sql
+-- migration ファイルのテンプレ
+create policy "table_name_select" on table_name for select to anon, authenticated using (true);
+create policy "table_name_insert" on table_name for insert to anon, authenticated with check (true);
+-- UPDATE は禁止（このテーブルは insert-only ログとして使う）
+-- create policy "table_name_update" on table_name for update ...
+-- DELETE は admin だけ。anon には許可しない
+-- create policy "table_name_delete" on table_name for delete ...
+```
+
+3 つだけ書いて「4 つ目は将来必要になったら」と思うのは **禁止**。今回の事故はそのパターンで起きた。
+
+### 15-② update/delete を新規実装する時の防御パターン
+
+Supabase の RLS 違反は **エラー無しで 0 行更新を返す**（攻撃者にレコード存在情報を漏らさないため）。`error` だけチェックすると silent fail を見逃す。**必ず .select() chain で更新行数を確認**：
+
+```js
+// 悪い例（silent fail を検知できない）
+const { error } = await supabase.from(t).update(p).eq("id", id);
+if (error) throw error;
+
+// 良い例
+const { data, error } = await supabase.from(t).update(p).eq("id", id).select();
+if (error) throw error;
+if (!data || data.length === 0) {
+  throw new Error("更新できませんでした（RLS違反 or レコード不存在）");
+}
+```
+
+delete も同様。`supabase.from(t).delete().eq("id", id).select()` で削除行を返してもらう。
+
+### 15-③ ポリシー追加・スキーマ変更で既存機能を破壊しないチェック
+
+新機能追加で `.update()` / `.delete()` / `.insert()` を呼ぶコードを書いたら、コミット前に `pg_policies` で対応ポリシーがあるか必ず確認：
+
+```bash
+TOKEN=$(cat ~/.config/supabase_token)
+curl -s "https://api.supabase.com/v1/projects/<REF>/database/query" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"query":"select policyname, cmd, roles from pg_policies where schemaname='\''public'\'' and tablename='\''<TABLE>'\''"}'
+```
+
+または robin-schema-guard（拡張済み）を呼んで「RLS と CRUD 呼び出しの対応」を機械的に検査させる。
+
+### 15-④ 同じパターン 2 回目を防ぐ反省
+
+事故が起きた時の教訓は **個別事象ではなく一般化** して理解する。今回：
+- 1 回目（5/24 朝）: 「INSERT ポリシー忘れた」→ 教訓「INSERT に注意」（× 個別化しすぎ）
+- 同日 2 回目: 「UPDATE ポリシー忘れた」→ 同じ穴に落ちた
+- 一般化すべきだった教訓: **「Supabase テーブルに対する全 CRUD 操作にはそれぞれ対応する RLS ポリシーが必要」**
+
+事故報告書には必ず「もっと一般化された教訓は何か」を 1 行書く運用にする。
+
+---
+
+## 16. git push 前のサブエージェントチェック（2026-05-25 蒲原水産CSP3連続事故から）
+
+**背景**: 蒲原水産ECサイトでQuillエディタ導入時、CSPヘッダーの設定ミスを3回連続でプッシュした。サブエージェント（sanji-ui-checker等）のツール説明文に「プロアクティブに使え」と書かれていたが、判断の余地がある書き方だったため3回とも飛ばした。結果、ユーザーが毎回エラーを報告→修正→再プッシュの往復が発生。
+
+### ルール: git push の前に、変更内容に応じたサブエージェントを1つ起動する
+
+| 変更内容 | 使うサブエージェント |
+|---|---|
+| HTML / CSS / JS / CSP / 表示系 | sanji-ui-checker |
+| 認証 / API / 秘密情報 / 依存パッケージ | chopper-security |
+| TypeScript / Next.js ビルド関連 | franky-build-checker |
+
+- チェック結果を待ってからプッシュする
+- コミット準備とサブエージェント起動は並行してOK（遅延ほぼゼロ）
+- 複数カテゴリにまたがる変更は、最も影響の大きい1つを選ぶ
+- チェックで問題が見つかったら、修正してから再チェック→プッシュ
+
+---
+
+## 17. 認証方式は「マジックリンク/OAuth だけ」を提唱しない（2026-05-25 task-triage iPhone PWA 事故から）
+
+**背景**: task-triage で認証をマジックリンク一本にしていたところ、中森が iPhone でホーム画面に PWA を追加 → メアド入力 → 届いたメールのリンクをタップ → **Safari で開く** → PWA 側は永遠にログイン画面のまま、という詰みパターンを発見。
+
+### なぜ起きるか（構造的限界）
+
+iOS の PWA（standalone モード）は、**スコープ外 URL への遷移を standalone から落として Safari で開く**。さらに Safari と PWA はストレージ・Cookie を共有しない。結果：
+
+- **マジックリンク**: メール内リンクをタップ → Safari でセッション確立 → PWA に戻らない ❌
+- **Google / Apple OAuth**: 認証後 Safari の元 URL にリダイレクト → 同じく PWA に戻らない ❌（OAuth も外部遷移するため同じ穴）
+- **OTP コード入力**: 外部遷移ゼロ、PWA 内でコード入力 → PWA 内でセッション確立 ✅（唯一の完全解）
+
+### ルール
+
+**認証 UX を設計・提案する時は、必ず「iOS PWA（ホーム画面追加）でも動くか」を確認する。**
+
+1. **マジックリンクだけ / OAuth だけを提唱しない**。PWA 利用者が詰む
+2. **OTP コード入力方式を必ず併設する**（リンク + コードを 1 通のメールに入れる Slack / Notion 型）
+   - PC・通常ブラウザ → リンクをクリック（楽）
+   - iPhone PWA・別コンテキスト → コードを手入力（確実）
+3. Supabase なら `signInWithOtp` が既にコードを生成している（`mailer_otp_length`）。メールテンプレに `{{ .Token }}` を併記し、フロントで `verifyOtp({ email, token, type: "email" })` で検証する
+4. 「OAuth にすれば解決」は **誤り**。OAuth も iOS PWA standalone では Safari に飛んで戻らない
+
+### 一般教訓
+
+「パスワードレス = マジックリンク」と短絡しない。**パスワードレスには「リンク方式」と「コード方式」があり、PWA/モバイルでは後者が必須**。新規プロジェクトで認証を実装する時は、最初からコード入力方式を組み込む。
+
+---
+
 ## メモリ運用について
 
 ユーザーが「メモリして」「覚えて」「全セッション共通」「今後も必ず」と言ったルールは、**メモリではなく、この CLAUDE.md に追記する**こと。メモリは関連時にしか読まれず、保証が弱い。CLAUDE.md は必ず読まれる。
