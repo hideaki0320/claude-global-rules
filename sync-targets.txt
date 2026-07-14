@@ -1,0 +1,18 @@
+# CLAUDE.md 同期対象リポジトリ（1行1リポ名）
+# '#' で始まる行と空行は無視される
+kanbara-ec-site
+google-ads-advisor
+task-triage
+intracanvas
+creskill
+bizchain-portal
+eteam-ai-site
+yscc-ticket
+kaisei-kessha
+five-elements-kitchen-diagnosis
+caravan-hp
+e-team-ai-compass
+intracanvas-lp
+shindan-app
+koso-navi
+bizchain-partners

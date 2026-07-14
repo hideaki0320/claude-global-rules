@@ -1,0 +1,107 @@
+name: Sync CLAUDE.md to all repos
+
+on:
+  push:
+    branches: [main]
+    paths: [CLAUDE.md]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync global rules to target repos
+        env:
+          GH_PAT: ${{ secrets.CLAUDE_SYNC_PAT }}
+        run: |
+          set -euo pipefail
+
+          # Read global rules from source
+          GLOBAL_CONTENT=$(cat CLAUDE.md)
+
+          while IFS= read -r repo; do
+            # Skip comments and empty lines
+            [[ -z "$repo" || "$repo" == \#* ]] && continue
+            repo=$(echo "$repo" | tr -d '\r' | xargs)
+            [[ -z "$repo" ]] && continue
+
+            echo "--- Syncing to hideaki0320/$repo ---"
+
+            # Get current CLAUDE.md from target repo
+            RESPONSE=$(curl -sf -H "Authorization: token $GH_PAT" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/hideaki0320/$repo/contents/CLAUDE.md" 2>/dev/null || echo '{}')
+
+            SHA=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sha',''))" 2>/dev/null || echo '')
+            CURRENT=$(echo "$RESPONSE" | python3 -c "
+import sys,json,base64
+d=json.load(sys.stdin)
+c=d.get('content','')
+if c: print(base64.b64decode(c).decode('utf-8'), end='')
+" 2>/dev/null || echo '')
+
+            # Build new content
+            MARKER_START='<!-- GLOBAL_RULES_START -->'
+            MARKER_END='<!-- GLOBAL_RULES_END -->'
+
+            if echo "$CURRENT" | grep -qF "$MARKER_START"; then
+              # Has markers: replace between them
+              PROJECT_SPECIFIC=$(echo "$CURRENT" | python3 -c "
+import sys
+content = sys.stdin.read()
+marker = '<!-- GLOBAL_RULES_END -->'
+idx = content.find(marker)
+if idx >= 0:
+    print(content[idx + len(marker):], end='')
+else:
+    print('', end='')
+")
+              NEW_CONTENT="${MARKER_START}
+${GLOBAL_CONTENT}
+${MARKER_END}${PROJECT_SPECIFIC}"
+            elif [ -n "$CURRENT" ]; then
+              # Existing file without markers: prepend global, keep all existing as project-specific
+              NEW_CONTENT="${MARKER_START}
+${GLOBAL_CONTENT}
+${MARKER_END}
+
+${CURRENT}"
+            else
+              # No CLAUDE.md exists: create with global rules only
+              NEW_CONTENT="${MARKER_START}
+${GLOBAL_CONTENT}
+${MARKER_END}"
+            fi
+
+            # Check if content actually changed
+            if [ "$CURRENT" = "$NEW_CONTENT" ]; then
+              echo "No changes for $repo, skipping."
+              continue
+            fi
+
+            # Encode content
+            ENCODED=$(echo "$NEW_CONTENT" | base64 -w 0)
+
+            # Push update
+            if [ -n "$SHA" ]; then
+              # Update existing file
+              curl -sf -X PUT \
+                -H "Authorization: token $GH_PAT" \
+                -H "Accept: application/vnd.github.v3+json" \
+                "https://api.github.com/repos/hideaki0320/$repo/contents/CLAUDE.md" \
+                -d "{\"message\":\"chore: sync global CLAUDE.md rules\",\"content\":\"$ENCODED\",\"sha\":\"$SHA\",\"branch\":\"main\"}" > /dev/null
+            else
+              # Create new file
+              curl -sf -X PUT \
+                -H "Authorization: token $GH_PAT" \
+                -H "Accept: application/vnd.github.v3+json" \
+                "https://api.github.com/repos/hideaki0320/$repo/contents/CLAUDE.md" \
+                -d "{\"message\":\"chore: add global CLAUDE.md rules\",\"content\":\"$ENCODED\",\"branch\":\"main\"}" > /dev/null
+            fi
+
+            echo "Done: $repo"
+          done < sync-targets.txt
+
+          echo "=== Sync complete ==="
