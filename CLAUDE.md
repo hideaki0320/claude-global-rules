@@ -1,632 +1,139 @@
 # グローバル開発ルール（全セッション・全プロジェクト共通）
 
-これらは過去に何度も依頼されたのに守られなかったルールです。**全プロジェクト・全セッションで例外なく適用**してください。
+全プロジェクト・全セッションで例外なく適用。
 
 ---
 
 ## 1. UIアイコン
-- 絵文字アイコン（🏠📐✍️📋📱📣📝📅📁🕐⚙️🚪 など）は **絶対に使わない**
-- アイコンは必ず **Lucide React**（または Heroicons 等）の SVG を使う
+- 絵文字アイコンは**絶対に使わない**。必ず **Lucide React**（または Heroicons 等）の SVG を使う
 
 ## 2. コミットとプッシュは必ずセット
-- ユーザーが「コミットして」「commit して」と言ったら、`git add` → `git commit` → `git push` を**確認なしで一連実行**する
-- プッシュ前に「プッシュしますか？」と聞かない
-- 例外：main/master への force push など破壊的なケースのみ事前確認
-- push が失敗したら（rebase 必要、権限エラー等）報告して指示を仰ぐ
-- **ルール16（サブエージェントチェック）との両立**: `git commit` → サブエージェントチェック → 問題なければそのまま `git push` / 問題あれば修正コミット → `git push`。**commit だけして push を忘れるのは禁止**。サブエージェントチェックを挟んでも、push まで必ず完了させる
-
-## 3. 詰まった時は即報告（黙らない）
-- 作業が詰まったら、解決を試み続ける前にまず **「詰まっています／原因の見立て／次に試す手」** を報告する
-- 同じ失敗を 2 回繰り返したら一旦止めてユーザーに状況を共有する
-- 長時間応答がない状態を作らない。進捗を細かく伝える
-
-## 4. うまくいっていたものが急にダメになったとき
-- **同じ方法を繰り返さない**
-- 環境・依存・設定の変化を疑う。直前のコミット、デプロイ、依存更新、外部 API の挙動変化を順に確認する
-- ユーザーに「いつから動かなくなったか」を確認する
-
-## 5. ユーザーが提供した観察事実は疑わない
-- 「コンソールに何も出ない」「画面が真っ白」などの報告に対し、同じ確認を繰り返し求めない
-- 報告された事実を前提に**別の角度から原因を探る**
-- 「もう一度コンソールを確認してください」と返すのは、明らかに前回と状況が変わった場合のみ
-- **「あなたはこれができるはず」と言われたら、まず広く探す**: `.env` だけ見て無いなら `~/.config/`, `~/.claude/`, `~/.zshrc`, `printenv` まで一気に確認。「自分の見える範囲に無い → 不可能」と結論する前に **`find ~ -name "*<キーワード>*" -maxdepth 5` 等で網羅探索** する。それでも見つからなければ「**どこに設定しましたか？**」と聞く。**「不可能です」と curl の証拠を並べて反論するのは禁止**（2026-05-09 の Supabase Management API 件で実害あり）
-
-## 6. .env / 環境変数の扱い
-- ユーザーは **.env ファイルの直接編集が苦手**（テキストエディタで開きにくい）
-- 環境変数を追加・変更する場合：
-  - **Railway / Vercel 等のホスティング側 UI に直接貼る方法を第一案**として案内する
-  - .env 内容を提示するときは**コピペ可能なコードブロック**で全文を出す
-  - 「.env を開いて◯◯行目を直して」のような操作は要求しない
-
-## 7. SQL は会話に全文貼る・対象プロジェクトを必ず明示する
-- Supabase 等で SQL を実行してもらう場合、**SQL をチャットに全文貼る**
-- ファイルに書いて「これを実行してください」では不便。コピペできる形でその場に出す
-- 複数 SQL を順に実行する場合も、毎回フルテキストを提示
-- **SQL の直前に必ず対象 Supabase プロジェクト名を明記する**（例：「▶ bizchain800 の SQL Editor で実行」「▶ IntraCanvas_pro の SQL Editor で実行」）
-- プロジェクトを書き忘れない。どちらか曖昧な場合は確認してから提示する
-
----
-
-## 8. E-team ブランドアセット（ロゴ・ヘッダー）
-- E-team ロゴは **ワードマーク版**（横長：シンボル + "E-TEAM" 文字）を使う。favicon の **シンボル単体版は使わない**（小さく、社名認知が弱いため）
-- ヘッダーでのロゴ高さは **最小 56px**。それより小さくしない（過去にプロジェクトで何度も「ロゴ小さい」と指摘された）
-- 共通の `<BrandHeader />` コンポーネントを各ページで使う。**ロゴサイズを各ページで個別指定しない**（一元管理）
-- 新しいページを作るときは、まず既存の `BrandHeader` を import する。インラインで `<img src="/e-team-logo.png" />` を直接書かない
-- ロゴ画像は `public/e-team-logo.png`（ワードマーク版）
-
----
-
-## 9. Supabase の環境変数名（新形式）
-- 最近の Supabase プロジェクトは **anon key が廃止され publishable key に変わっている**
-- 環境変数名は `NEXT_PUBLIC_SUPABASE_ANON_KEY` **ではなく** `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` を使う
-- コードを書くときも、既存コードを修正するときも、必ずこの新しい名前を使うこと
-- `SUPABASE_SERVICE_ROLE_KEY` はそのまま変わらない
-
----
-
-## 10. 本番DBへの書き込みは最大限慎重に（2026-05-09 重大インシデントから）
-
-**背景**: 蒲原水産ECサイトで、WordPress画像URLをSupabase URLに修正するスクリプトを実行した際、`images`列（クライアントが手動で複数画像を登録していたjsonb配列）を`[1枚だけ]`に上書きしてしまった。クライアントの作業データが消失し、DBバックアップからの復元が必要になった。
-
-### なぜ起きたか
-1. **既存データの確認を怠った** — `images`列に複数画像が入っている可能性を考慮せず、全レコードを一律上書き
-2. **更新カラムが過剰** — `image`列だけで済むのに`images`列まで含めた
-3. **バックアップなしに一括更新** — 100件近いPATCH前にSELECT結果を保存しなかった
-4. **テスト実行なし** — 1件で試してから全件、という手順を踏まなかった
-
-### 防止ルール（全プロジェクト共通・例外なし）
-1. **本番DBへのUPDATE/DELETEは、実行前に対象レコードのSELECT結果をローカルにJSON保存する**
-2. **更新カラムは必要最小限。目的外のカラムを含めない**
-3. **一括更新は「1件テスト → 確認 → 全件実行」の3ステップ必須**
-4. **クライアントが手動入力したデータは絶対に上書きしない。必要な場合は事前確認**
-5. **スクリプト実行前に「何を変更し、何を変更しないか」を宣言する**
-
----
-
-## 11. Supabase Management API アクセストークン（2026-05-09 設定）
-
-**中森さんは Supabase Management API のアクセストークンを `~/.config/supabase_token` に保存済み**（chmod 600）。これを使えば全Supabaseプロジェクト（task-triage / bizchain800 / intracanvas など）に対して **Claude が直接 SQL 実行・設定確認・テンプレ確認できる**。
-
-### 使い方（必須コマンド）
-
-```bash
-# プロジェクト一覧
-TOKEN=$(cat ~/.config/supabase_token); curl -s "https://api.supabase.com/v1/projects" -H "Authorization: Bearer $TOKEN"
-
-# SQL 実行（auth schema 含む全スキーマOK）
-TOKEN=$(cat ~/.config/supabase_token); curl -s "https://api.supabase.com/v1/projects/<PROJECT_REF>/database/query" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"query":"select ..."}'
-
-# Auth 設定（Email Templates / SMTP / Hooks）の確認
-TOKEN=$(cat ~/.config/supabase_token); curl -s "https://api.supabase.com/v1/projects/<PROJECT_REF>/config/auth" -H "Authorization: Bearer $TOKEN"
-```
-
-### 何ができるか
-
-- **auth スキーマ** に直接アクセス（auth.users / auth.audit_log_entries / auth.flow_state など）
-- **Email Templates の中身** を直接確認・更新（保存値が画面表示と乖離していないか検証可能）
-- **Auth Hooks の有効/無効** 確認
-- **SMTP 設定** の確認
-- 全スキーマでの SELECT/INSERT/UPDATE/DELETE/DDL
-
-### いつ使うか
-
-- **読み取り系（SELECT、設定確認）**: 即実行してOK。git に何も残さない（透明性は git history 上の commit と Supabase ダッシュボードに任せる）
-- **DDL / 本番データ変更**: **必ず git に記録を残す**（次項参照）
-- **破壊的操作（DELETE / DROP）**: 必ず事前に SELECT で対象を確認 → ローカルJSONバックアップ → 1件テスト → 全件、というルール10のフローを守る
-
-### 【最重要】API経由で DB を変えたら必ず git に migration を残す
-
-Management API は強力すぎて **「コードと DB が乖離する」事故** を生みやすい。これを防ぐため、API経由で DDL や本番データ変更を実行する時は、**必ず以下の順序を守る**：
-
-1. **migration SQL を書く**: 該当プロジェクトの `db/migrations/<YYYYMMDD_HHMM>_<短い説明>.sql` に冪等な SQL（`if not exists` / `on conflict do nothing` 等）を作成
-2. **git に commit + push**: コード変更と同じセッションで一緒にプッシュ。**「あとで commit する」は禁物**（忘れる）
-3. **API 経由で実行**: `curl ... /v1/projects/<ref>/database/query`
-
-逆順（先に実行→後で commit）はバグの元。**git → API** を厳守。
-
-これは「中森さんが SQL Editor で実行する」既存フローと同じだが、Claude が API で代行する時は **ルール7（SQL を会話に貼る）に加えて migration ファイルも作る** のがセット。
-
-read-only な診断 SELECT は git 不要だが、それ以外は必ず git。
-
-### セキュリティ運用
-
-- **トークン本体をチャットや commit message に絶対貼らない**
-- ファイルパス（`~/.config/supabase_token`）は記載してOK
-- トークン漏洩疑いがあれば Supabase ダッシュボード → Account → Access Tokens で即 Revoke
-- 業務上不要になったら Revoke する
-
-### 「全セッション共通の認識にしてくれ」と頼まれたら
-
-このルールのように **必ず `~/.claude/CLAUDE.md` に書き込む**。memory/ には書かない（読まれる保証が弱い）。書き込み完了をユーザーに「✅追記しました」と明示報告する。
-
----
-
-## 12. スクリプトの実行ルール（2026-05-14 sync-global-rules 事故から）
-
-**累積する副作用**（git commit / git push / INSERT / カウンタ +=1 等の **非冪等な書き込み**）を含むスクリプトについては以下を守る。冪等な操作のみのスクリプトはこの章の対象外。
-
-### 12-① background 実行禁止
-累積する副作用を含むスクリプトは `run_in_background: true` で実行しない（必ず foreground）。
-
-`npm run dev` / `npm run build` / 冪等な UPDATE / ファイル上書き等は background で OK。
-
-### 12-② 複数リポへの書き込みは原則 1 ステップずつ
-複数リポジトリへの書き込み操作は、原則 Bash ツールを 1 ステップずつ呼ぶ。理由は「ロジックバグを 1 リポ目で気付いて止められる」観測可能性のため。
-
-以下を**全部満たす**スクリプトなら一括処理 OK：
-- 12-③（PID lock）あり
-- 12-④（冪等性チェック）あり
-- 事前に dry-run（書き込みなし出力のみ）で結果を検証済み
-
-「複数リポへの書き込み」は普段ほぼ発生しないので、判断に迷ったら 1 ステップずつ。
-
-### 12-③ 多重起動されうるスクリプトに PID lock 必須
-以下のいずれかに該当するスクリプトは冒頭に PID lock を必須：
-
-- background 実行するもの
-- cron / launchd / 何らかのスケジューラに登録するもの
-- 多重起動される可能性があるもの
-
-```bash
-mkdir /tmp/my-script.lock 2>/dev/null || exit 0
-trap 'rmdir /tmp/my-script.lock' EXIT
-```
-
-foreground で 1 回呼んで終わりの短命スクリプトには lock 不要。
-
-### 12-④ 累積する書き込み操作は冪等に
-`git commit` 等の累積する操作は、実行前に「すでに同じ状態か」確認して、同じなら skip する。
-
-```bash
-# 非冪等（呼ぶたび新 commit）
-git commit -m "..."
-
-# 冪等版
-if git diff --cached --quiet; then
-  echo "変更なし、skip"
-else
-  git commit -m "..."
-fi
-```
-
-### 事故詳細
-2026-05-14、`~/.claude/sync-global-rules.sh` を作成し `run_in_background: true` で実行。何らかの理由で同じスクリプトが大量に並行起動され、各々が `git commit` を発行した結果、intracanvas に 183 commit、E-team AI公式サイト に 182 commit の重複が発生。Railway が各 commit をビルドしようとして失敗通知が大量送信された。スクリプト本体に PID lock も冪等性チェックも無く、`run_in_background: true` だったため気付くのも遅れた。
-
----
-
-## 13. Railway / デプロイサービスの破壊的操作ルール（2026-05-14 IntraCanvas 停止事故から）
-
-以下は service 停止に直結する破壊的操作。慎重に：
-
-- auto-deploy の無効化
-- 大量の deployment 一括キャンセル
-- service の Source 切断
-
-### 13-① 操作前に SERVING deployment ID を記録
-上記の destructive operation の直前に、**現在 SERVING している deployment ID** を必ず記録する。
-
-```bash
-railway deployment list | head -5
-# → SUCCESS 状態の最新 deployment ID をメモ
-```
-
-復旧が必要になった時に「あの状態に戻したい」を辿るための情報。
-
-### 13-② メール / ビルド停止が目的なら、service 稼働を止める手段は選ばない
-「メール通知を止めたい」「ビルドを止めたい」がゴールの場合、service 稼働を止める操作は選ばない。代わりに：
-
-- Railway の Notification Rules で Email を In-App のみに変更
-- Gmail 側フィルタで受信側ブロック
-- 個別の deployment cancel のみ（auto-deploy は触らない）
-
-### 13-③ auto-deploy 無効化は「戻し」とセット
-auto-deploy を無効化したら、**戻すための再有効化 + 手動 deploy がセットで必要**。忘れると serving 中の deployment が他の理由で消えた時に補えず、service が完全停止する。
-
-### 事故詳細
-メール通知を止めるために auto-deploy OFF + 全 Queue cancel を実行 → SUCCESS deployment が 0 個になり intracanvas が完全停止 → SSL 証明書も発行できずユーザーがログイン不能になった。復旧は auto-deploy 再有効化 + 手動 deploy で実施した。
-
----
-
-## 14. 外部依存ありの機能を実装したら、その外部設定を必ず先に提示する（2026-05-20 Resend追跡欠落事故から）
-
-**背景**：BIZCHAIN800の名刺メール一括送信を実装。UIに「開封」「クリック」列を出し、Resend webhookハンドラまでコードを書いたのに、**「Resend Domain側で Open/Click Tracking のCNAME設定が必要」をユーザーに一度も伝えなかった**。ユーザー視点では機能完成として運用に乗ってしまい、800通近く送信して開封・クリック計測ゼロという事態に。過去送信分は遡って追跡不可。
-
-これはテスト漏れではなく、**機能の前提条件をユーザーに共有しなかった**という、より根本的なミス。
-
-### 14-① 外部サービス・SaaS設定が必要な機能を実装する時は、最初に「外部依存リスト」を必ず提示する
-
-実装に着手する前に、以下を明示的にユーザーに渡す：
-
-```
-この機能を動かすために必要な外部設定:
-- [SaaS名] の [設定項目1]：[具体的に何をする必要があるか]
-- [SaaS名] の [設定項目2]：[具体的に何をする必要があるか]
-- [DNS] の [レコード]：[追加が必要な値]
-- [環境変数] [名前]：[Railway / Vercel 等で設定が必要]
-```
-
-リストを出さずに実装に進むのは禁止。コードだけ書いて「完成」と判定しない。
-
-### 14-② メール送信機能の外部依存（参考例）
-
-メール（Resend）機能を実装するときに必ず確認・提示すべき設定：
-
-1. **Resend Domain の DKIM/SPF 認証**（Verified 表示）
-2. **Resend Domain の Open Tracking の Configure**（CNAME 追加が必要）
-3. **Resend Domain の Click Tracking の Configure**（CNAME 追加が必要）
-4. **Resend Webhook の登録**（本番URL を Subscribe）
-5. **Webhook の Subscribed Events**：delivered / bounced / opened / clicked / complained すべて
-6. **Resend プラン**（Free 100/日, 2req/sec / Pro 50,000/月, 10req/sec）と想定送信量の照合
-7. **環境変数**：RESEND_API_KEY、RESEND_WEBHOOK_SECRET
-8. **From アドレスの権限**：ドメイン認証済みのアドレス or サブドメインを使うか
-
-### 14-③ 外部依存の状態を実データで end-to-end 検証する
-
-14-① で提示した外部設定が「全部完了している」ことを実データで確認する。コードだけ書いて「動くだろう」と判定しない：
-
-- 自分宛に1通テスト送信 → 実際に受信トレイで開く → DBの opened_at に時刻が入るか確認
-- 本文のリンクをクリック → DBの clicked_at に時刻が入るか確認
-- 不正なメアド・空配列・rate limit越え時のハンドリングが UI でユーザーに見える形で表示されるか
-- 失敗ログが DB に残るか
-
-### 14-④ バウンス・苦情の自動抑制が無いと配信評価が下がる
-
-- `bounced` / `complained` 履歴のあるメアドは次回送信対象から自動除外するロジックを実装する
-- していなければユーザーに「未実装」と明示し、運用上の判断を求める
-
-### 14-⑤ メール送信は取り返しがつかない
-
-- 誤送信は撤回不能
-- 開封・クリック計測の漏れは過去分回復不可（追跡ピクセルが既に欠落）
-- 配信停止リクエストの不履行は法的問題
-- なのでメール送信機能は **「動くだろう」ではなく「動くと確認できた」状態**になってからリリース
-
----
-
-## 15. Supabase RLS の銀の弾はない（2026-05-24 task-triage 編集機能事故から）
-
-**背景**: 業務整理アプリ (task-triage) で `session_submissions` テーブルに INSERT/SELECT/DELETE のポリシーは追加していたが UPDATE を漏らした。受講生の編集機能を実装後、Supabase の RLS が "silent fail"（error 無し・updated_rows = 0）で返すため、フロント側では「保存ボタンを押したけど何も起きない」幽霊バグになった。同じ日に INSERT ポリシー漏れ事故 (sanji-ui-checker が検出) も起こしており、**「同じパターン 2 回」** という構造ミス。
-
-### 15-① 新規テーブル作成時は CRUD 4 ポリシーを必ず同時定義
-
-Supabase は新規テーブルに対し `relrowsecurity=true` を自動付与する。ポリシー無しは **anon/authenticated からの全件ブロック**。最初から CRUD 4 つ書き、不要なものは明示的にコメントで「ここは禁止」と書く：
-
-```sql
--- migration ファイルのテンプレ
-create policy "table_name_select" on table_name for select to anon, authenticated using (true);
-create policy "table_name_insert" on table_name for insert to anon, authenticated with check (true);
--- UPDATE は禁止（このテーブルは insert-only ログとして使う）
--- create policy "table_name_update" on table_name for update ...
--- DELETE は admin だけ。anon には許可しない
--- create policy "table_name_delete" on table_name for delete ...
-```
-
-3 つだけ書いて「4 つ目は将来必要になったら」と思うのは **禁止**。今回の事故はそのパターンで起きた。
-
-### 15-② update/delete を新規実装する時の防御パターン
-
-Supabase の RLS 違反は **エラー無しで 0 行更新を返す**（攻撃者にレコード存在情報を漏らさないため）。`error` だけチェックすると silent fail を見逃す。**必ず .select() chain で更新行数を確認**：
-
-```js
-// 悪い例（silent fail を検知できない）
-const { error } = await supabase.from(t).update(p).eq("id", id);
-if (error) throw error;
-
-// 良い例
-const { data, error } = await supabase.from(t).update(p).eq("id", id).select();
-if (error) throw error;
-if (!data || data.length === 0) {
-  throw new Error("更新できませんでした（RLS違反 or レコード不存在）");
-}
-```
-
-delete も同様。`supabase.from(t).delete().eq("id", id).select()` で削除行を返してもらう。
-
-### 15-③ ポリシー追加・スキーマ変更で既存機能を破壊しないチェック
-
-新機能追加で `.update()` / `.delete()` / `.insert()` を呼ぶコードを書いたら、コミット前に `pg_policies` で対応ポリシーがあるか必ず確認：
+- 「コミットして」と言われたら `git add` → `git commit` → `git push` を**確認なしで一連実行**
+- 例外：main/master への force push のみ事前確認
+- ルール16（サブエージェントチェック）との両立：commit → チェック → push。**push を忘れるのは禁止**
+
+## 3. 詰まった時は即報告
+- まず「詰まっています／原因の見立て／次に試す手」を報告。同じ失敗を2回繰り返したら止めて共有
+
+## 4. 急に動かなくなったら同じ方法を繰り返さない
+- 環境・依存・設定の変化を疑う。「いつから動かなくなったか」を確認
+
+## 5. ユーザーの観察事実は疑わない
+- 報告された事実を前提に別の角度から探る。同じ確認を繰り返し求めない
+- 「できるはず」と言われたら `.env` / `~/.config/` / `printenv` / `find ~` まで網羅探索してから判断
+
+## 6. .env / 環境変数
+- Railway / Vercel 等のUI で設定する方法を第一案にする。.env 手動編集は求めない
+- .env を提示する時はコピペ可能なコードブロックで全文出す
+
+## 7. SQL は会話に全文貼る + 対象プロジェクト名を明記
+- 「▶ bizchain800 の SQL Editor で実行」のように必ずプロジェクト名を書く
+
+## 8. E-team ブランドアセット
+- ロゴはワードマーク版（横長）、ヘッダー高さ最小 56px
+- 共通 `<BrandHeader />` を使う。インラインで `<img>` を直接書かない
+
+## 9. Supabase 環境変数名
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` ではなく `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` を使う
+
+## 10. 本番DBへの書き込みは最大限慎重に
+1. UPDATE/DELETE 前に対象レコードの SELECT 結果をローカル JSON 保存
+2. 更新カラムは必要最小限
+3. 一括更新は「1件テスト → 確認 → 全件」の3ステップ必須
+4. クライアントが手動入力したデータは絶対に上書きしない
+5. 実行前に「何を変更し、何を変更しないか」を宣言
+
+## 11. Supabase Management API
+- トークンは `~/.config/supabase_token`（chmod 600）
+- 読み取り系は即実行OK。DDL/本番データ変更は必ず git に migration を残す
+- 順序：migration SQL 作成 → git commit + push → API 実行（逆順禁止）
+- トークン本体をチャットや commit message に貼らない
 
 ```bash
 TOKEN=$(cat ~/.config/supabase_token)
-curl -s "https://api.supabase.com/v1/projects/<REF>/database/query" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"query":"select policyname, cmd, roles from pg_policies where schemaname='\''public'\'' and tablename='\''<TABLE>'\''"}'
+# プロジェクト一覧
+curl -s "https://api.supabase.com/v1/projects" -H "Authorization: Bearer $TOKEN"
+# SQL 実行
+curl -s "https://api.supabase.com/v1/projects/<REF>/database/query" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"query":"select ..."}'
 ```
 
-または robin-schema-guard（拡張済み）を呼んで「RLS と CRUD 呼び出しの対応」を機械的に検査させる。
+## 12. スクリプト実行ルール
+- 累積する副作用（git commit/push, INSERT 等）を含むスクリプトは `run_in_background: true` 禁止
+- 複数リポへの書き込みは原則1ステップずつ
+- 多重起動されうるスクリプトには PID lock 必須、累積する書き込みは冪等に
 
-### 15-④ 同じパターン 2 回目を防ぐ反省
+## 13. Railway 破壊的操作
+- auto-deploy 無効化 / 全 Queue cancel 等の前に SERVING deployment ID を記録
+- 「ビルドを止めたい」が目的なら service 稼働を止める操作は選ばない
+- auto-deploy 無効化は「再有効化 + 手動 deploy」とセット
 
-事故が起きた時の教訓は **個別事象ではなく一般化** して理解する。今回：
-- 1 回目（5/24 朝）: 「INSERT ポリシー忘れた」→ 教訓「INSERT に注意」（× 個別化しすぎ）
-- 同日 2 回目: 「UPDATE ポリシー忘れた」→ 同じ穴に落ちた
-- 一般化すべきだった教訓: **「Supabase テーブルに対する全 CRUD 操作にはそれぞれ対応する RLS ポリシーが必要」**
+## 14. 外部依存ありの機能は外部設定を先に提示
+- 実装前に「外部依存リスト」（SaaS 設定 / DNS / 環境変数）を提示。コードだけ書いて完成と判定しない
+- メール送信は DKIM/SPF / Open/Click Tracking CNAME / Webhook / 環境変数を全部確認
+- 実データで end-to-end 検証（1通テスト送信 → DB に opened_at 記録確認）
+- bounced/complained メアドの自動除外ロジック未実装なら明示
 
-事故報告書には必ず「もっと一般化された教訓は何か」を 1 行書く運用にする。
+## 15. Supabase RLS
+- 新規テーブルは CRUD 4ポリシーを同時定義。不要なものはコメントで「禁止」と明記
+- update/delete は `.select()` chain で更新行数を確認（RLS 違反は silent fail）
+- コミット前に `pg_policies` で対応ポリシーがあるか確認
 
----
+## 16. git push 前のサブエージェントチェック
 
-## 16. git push 前のサブエージェントチェック（2026-05-25 蒲原水産CSP3連続事故から）
-
-**背景**: 蒲原水産ECサイトでQuillエディタ導入時、CSPヘッダーの設定ミスを3回連続でプッシュした。サブエージェント（sanji-ui-checker等）のツール説明文に「プロアクティブに使え」と書かれていたが、判断の余地がある書き方だったため3回とも飛ばした。結果、ユーザーが毎回エラーを報告→修正→再プッシュの往復が発生。
-
-### ルール: git push の前に、変更内容に応じたサブエージェントを1つ起動する
-
-| 変更内容 | 使うサブエージェント |
+| 変更内容 | サブエージェント |
 |---|---|
-| **決済・課金・解約フロー** | **chopper-security（必須・省略不可）** |
-| **ログイン・認証・セッション管理** | **chopper-security（必須・省略不可）** |
-| HTML / CSS / JS / CSP / 表示系 | sanji-ui-checker |
-| 認証 / API / 秘密情報 / 依存パッケージ | chopper-security |
-| TypeScript / Next.js ビルド関連 | franky-build-checker |
+| **決済・課金・認証** | **chopper-security（省略不可）** |
+| HTML / CSS / JS / 表示系 | sanji-ui-checker |
+| 認証 / API / 秘密情報 | chopper-security |
+| TypeScript / Next.js ビルド | franky-build-checker |
 
-- チェック結果を待ってからプッシュする
-- コミット準備とサブエージェント起動は並行してOK（遅延ほぼゼロ）
-- 複数カテゴリにまたがる変更は、最も影響の大きい1つを選ぶ
-- チェックで問題が見つかったら、修正してから再チェック→プッシュ
-- **決済・認証は信用失墜に直結する。「小さな変更だから」でサブエージェントを省略しない**
+## 17. 認証方式は OTP コード入力を必ず併設
+- マジックリンクだけ / OAuth だけを提唱しない（iOS PWA で詰む）
+- リンク + コードを1通のメールに入れる Slack/Notion 型
+- Supabase: `signInWithOtp` + テンプレに `{{ .Token }}` + `verifyOtp`
 
----
+## 18. 重い処理は事前にトークン消費目安を伝える
+- Agent 4個以上: 事前告知。Workflow / deep-research: 呼ばない（事前確認+許可が必要）
+- まず自分の知識 → WebSearch 2-3回 → Explore agent 1個、の順で軽い手段を優先
 
-## 17. 認証方式は「マジックリンク/OAuth だけ」を提唱しない（2026-05-25 task-triage iPhone PWA 事故から）
+## 19. 外部サービス連携コードの変更は仮説で本番に入れない
+- 外部 API パラメータ変更は実際のレスポンスで動作確認してから push
+- 決済・カート・注文フローは「動くと確認できた」状態で push
 
-**背景**: task-triage で認証をマジックリンク一本にしていたところ、中森が iPhone でホーム画面に PWA を追加 → メアド入力 → 届いたメールのリンクをタップ → **Safari で開く** → PWA 側は永遠にログイン画面のまま、という詰みパターンを発見。
+## 20. AskUserQuestion ツール禁止
+- モーダルが文脈を隠すため使用禁止。テキストで列挙して実装に進む
+- 例外：本番 DB DROP 等の取り返しがつかない破壊的操作のみ
 
-### なぜ起きるか（構造的限界）
+## 21. 新機能・修正は横展開チェック
+- 1箇所に導入したら commit 前に grep で類似箇所を確認。全部適用 or 不要理由を列挙
 
-iOS の PWA（standalone モード）は、**スコープ外 URL への遷移を standalone から落として Safari で開く**。さらに Safari と PWA はストレージ・Cookie を共有しない。結果：
+## 22. 新規 Web プロジェクトは Next.js App Router
+- 外部公開ページがある場合は Next.js。SPA は「完全にログイン後だけのツール」のみ
 
-- **マジックリンク**: メール内リンクをタップ → Safari でセッション確立 → PWA に戻らない ❌
-- **Google / Apple OAuth**: 認証後 Safari の元 URL にリダイレクト → 同じく PWA に戻らない ❌（OAuth も外部遷移するため同じ穴）
-- **OTP コード入力**: 外部遷移ゼロ、PWA 内でコード入力 → PWA 内でセッション確立 ✅（唯一の完全解）
+## 23. push 前に grep で横展開チェック
+- 変更したパターンで `grep -rn "キーワード" src/ app/` を1回実行。省略する理由がない
 
-### ルール
+## 24. 外部サービスのプロジェクト名は分かる名前にする
+- ランダム生成名を放置しない。CLI が2回失敗したらダッシュボード経由に切り替え
 
-**認証 UX を設計・提案する時は、必ず「iOS PWA（ホーム画面追加）でも動くか」を確認する。**
+## 25. AI モデル名は最新を確認してから書く
 
-1. **マジックリンクだけ / OAuth だけを提唱しない**。PWA 利用者が詰む
-2. **OTP コード入力方式を必ず併設する**（リンク + コードを 1 通のメールに入れる Slack / Notion 型）
-   - PC・通常ブラウザ → リンクをクリック（楽）
-   - iPhone PWA・別コンテキスト → コードを手入力（確実）
-3. Supabase なら `signInWithOtp` が既にコードを生成している（`mailer_otp_length`）。メールテンプレに `{{ .Token }}` を併記し、フロントで `verifyOtp({ email, token, type: "email" })` で検証する
-4. 「OAuth にすれば解決」は **誤り**。OAuth も iOS PWA standalone では Safari に飛んで戻らない
-
-### 一般教訓
-
-「パスワードレス = マジックリンク」と短絡しない。**パスワードレスには「リンク方式」と「コード方式」があり、PWA/モバイルでは後者が必須**。新規プロジェクトで認証を実装する時は、最初からコード入力方式を組み込む。
-
----
-
-## 18. 重い処理は事前にトークン消費目安を伝える（2026-06-03 策定・事故から）
-
-**重い処理を呼ぶ前は、必ず事前にトークン消費目安と概算費用を伝えてから実行する。**
-
-### 規模別の運用ルール
-
-| 規模 | ルール |
-|---|---|
-| 並列 Agent 1〜3 個 / 普段の subagent | 事前告知不要、自由に呼ぶ |
-| 並列 Agent 4 個以上 | 事前に「合計 ~XXX 万トークン、$X 規模」と告知してから呼ぶ |
-| Workflow / deep-research / Skill 経由の大規模 fan-out | **呼ばない**。呼ぶなら必ず事前確認 + ユーザー許可 |
-
-### 消費目安（参考、Sonnet 4 のレート）
-
-- 軽い Agent 1個（探索・grep系）：5,000〜30,000 トークン（$0.02〜$0.10）
-- 中規模 Agent 1個（UI / ビルド検査）：30,000〜100,000（$0.10〜$0.40）
-- 重い Agent 1個（コード実装まで）：200,000〜500,000（$0.70〜$2）
-- Workflow（deep-research 等）：3,000,000〜5,000,000（**$10〜$50**）
-
-### 事故事例（2026-06-03）
-
-CRESKILL の「タイムライン機能設計のために世の流行りアプリ調査」で deep-research Workflow を呼んだら 108 agents × 3.8M トークン消費して失敗。Claude Pro / Max の 5h ウィンドウ枠を即座に枯渇させ、追加購入した API クレジット $20 が瞬殺された。
-
-→ Workflow / 100+ Agent の fan-out は事前確認なしに呼ばない。「調査して」と言われても、まず私自身の知識で答え、足りなければ単発 WebSearch / WebFetch 2-3 回で済ませる（無料枠）。
-
-### 軽い代替手段（優先順）
-
-1. **私自身の知識ベース**（ゼロコスト）
-2. **WebSearch / WebFetch を 2-3 回**（無料枠、安価）
-3. **Explore agent を 1 個**（数千〜数万トークン）
-
-これらで足りない時だけ、事前確認の上で重い処理を検討する。
-
----
-
-## 19. 外部サービス連携コードの変更は仮説で本番に入れない（2026-06-03 easy-myshopカート停止事故から）
-
-**背景**: 蒲原水産ECサイトで、easy-myshopカートの商品重複バグを修正しようとして、cartin URLの `order_made_flg=1` パラメータを削除した。「このフラグが重複原因」は推測に過ぎなかったが、easy-myshopの実APIで検証せずに本番プッシュ。実際にはこのフラグは番号付きバッチパラメータ（item_code1, item_count1）の必須フラグであり、削除によりカートが完全に機能停止した。
-
-### 防止ルール
-
-1. **外部サービス（easy-myshop, Stripe, Resend 等）のAPI呼び出しパラメータを変更する場合、実際のAPIレスポンスで動作確認してからプッシュする**
-2. **「このパラメータが原因だろう」は仮説。仮説を本番に入れない。** 検証方法：
-   - ブラウザで実際にカート遷移してエラーが出ないか確認
-   - curlやfetchで実際のエンドポイントを叩いてレスポンスを見る
-   - テスト用の商品コードで1件だけ試す
-3. **決済・カート・注文フロー（お金が絡む導線）のコード変更は特別扱い**。「動くだろう」は禁止、「動くと確認できた」状態でプッシュ
-4. **UIチェック（sanji-ui-checker）のスキップは、決済導線の変更がない場合のみ許可**
-
-### 一般化された教訓
-
-**推測に基づく修正は、修正対象が重要であるほど危険。** バグ報告 → 原因推測 → 即修正、ではなく、バグ報告 → 原因推測 → **推測の検証** → 修正、の順序を守る。
-
----
-
-## 20. AskUserQuestion ツール禁止（2026-06-05 中森指示）
-
-**`AskUserQuestion` ツールは原則使用禁止。**
-
-### 理由
-
-モーダルが画面を覆い、**その前のテキスト（質問の文脈）が見えなくなる**。結果として「質問の意味がわからない」が多発、UI として破綻している。
-
-### 運用
-
-- 複数案を提示する場合も、**テキストで列挙してそのまま実装に進む**
-- 中森が「確認モーダル」「質問モーダル」「選択肢モーダル」と口頭で言う場合、**すべて `AskUserQuestion` ツールを指す**
-- 迷ったらまず実装し、後で報告 + 修正余地を残す形がベスト
-
-### 例外（極めて稀）
-
-本当に取り返しがつかない破壊的操作（本番DB DROP / 大量データ消去等）で、かつ事前情報が不足している時のみ。それ以外は使用しない。
-
----
-
-## 21. 新機能・修正は必ず横展開チェックを通す（2026-06-05 CRESKILL M1.1.2 画像欄抜け事故から）
-
-**新しいトークン / コンポーネント / 機能 / バグ修正パターンを 1 箇所に導入したら、commit 前に grep で類似箇所への横展開漏れを必ず確認する。**
-
-### なぜ
-
-「導入した場所だけ修正して完了」と扱うと、他の同種箇所が放置される。
-
-2026-06-05 事故：CRESKILL M1.1.3 で `{{image:KEY}}` トークン（章本文内の画像投稿欄）を新規導入。M1.1.2 にも『画像生成 ChatGPT/Gemini 比較』演習があったのに、画像欄を横展開せず「URL or 印象を貼り付け」のテキスト欄のままにしてしまった。中森が気づくまで画像投稿不能のまま放置。
-
-### 必須手順（commit 前）
-
-1. **導入した「機能のキーワード」を全プロジェクト grep**
-   - 例：`{{image:` トークン導入 → 全章本文を「画像」「スクショ」「生成」で grep
-   - 例：`SoftTextarea` 新規導入 → `<textarea` を全 grep
-   - 例：RLS ポリシー追加 → `pg_policies` を他テーブルでも確認
-2. **類似箇所がある場合、すべて同じ修正を適用**
-3. **「不要と判定したもの」も理由付きで列挙**（自分の判断ログを commit message に残す）
-
-### 適用例
-
-| 種類 | 横展開チェック対象 |
-|---|---|
-| 新トークン (`{{image:KEY}}` 等) | 全章 body_markdown |
-| 新 UI コンポーネント | 同種の旧コンポーネント呼び出し |
-| バグ修正 | 同パターンが他にもないか |
-| DB スキーマ変更 | 同カラム名/制約を他テーブルに適用するか |
-| 環境変数追加 | env.example / Railway / 各ホスティング先 |
-
-### 完了判定の言い換え
-
-「1 箇所修正で完了」を許さない。完了判定は **「同種箇所を grep して網羅した」+「不要箇所を理由付きで列挙した」** とする。
-
----
-
-## 22. 新規 Web プロジェクトは Next.js App Router で始める（2026-06-07 CRESKILL Vite→Next.js 移行事故から）
-
-**背景**: CRESKILL を Vite SPA で作り始めた結果、SEO/OGP のために Express カスタムサーバーを継ぎ足し、最終的に Next.js に全面移行する羽目になった。93ファイルの書き換え、SSR 安全性の修正、Link to= → href= の置換漏れ等で丸1日を消費。最初から Next.js なら不要だった作業。
-
-### ルール
-
-- 外部公開ページがある Web プロジェクトは **Next.js App Router** で始める
-- **外部公開ページ**（LP、料金、タイプ別等）→ SSR / SSG。クローラーが読める必要がある
-- **ログイン後のアプリ画面**（マイページ、章、クエスト等）→ CSR で OK
-- この使い分けが 1 つのプロジェクト内でできるのが Next.js の利点
-- SPA（Vite / CRA）は「完全にログイン後だけのツール」以外では選ばない
-
----
-
-## 23. push 前に grep で横展開チェックを実行する（2026-06-07 CRESKILL ロゴ崩れ3連続事故から）
-
-**背景**: ヘッダーロゴのサイズ修正を app/page.jsx だけに適用して push → BrandHeader.jsx が未修正で崩れる → 修正して再 push → legal/terms も未修正 → 3回目の push。「同じパターンが他にないか」を grep 1回で確認すれば防げた。ルール21（横展開チェック）は既にあったが守られなかった。
-
-### ルール（ルール21の具体的手順）
-
-push する前に、変更したパターンで **`grep -rn "キーワード" src/ app/`** を1回実行する。
-
-例：
-- `height="36"` を `style={{ height: 36 }}` に変えた → `grep -rn 'height="36"' src/ app/`
-- `<Link to=` を `<Link href=` に変えた → `grep -rn ' to={' src/`
-- `localStorage.getItem` に guard を追加した → `grep -rn 'localStorage.getItem' src/`
-
-**grep は数百トークン・数秒で終わる。省略する理由がない。**
-
----
-
-## 24. 外部サービスのプロジェクト名・リソース名は日本語で分かる名前をつける（2026-06-13 Railway ゴミプロジェクト事故から）
-
-**背景**: 診断アプリを Railway にデプロイする際、CLI の `railway init` がタイムアウトを繰り返し、`overflowing-passion`、`merry-youthfulness`、`robust-sparkle` 等の意味不明なランダム名プロジェクトが6個も生成された。ダッシュボードがゴミだらけになり、どれが本物か分からなくなった。これは今回だけでなく、以前から繰り返し発生していた問題。
-
-### ルール
-
-- **Railway / Vercel / Supabase / GitHub 等のプロジェクト名・サービス名は、中身が一目で分かる名前にする**
-- ランダム生成名（`overflowing-passion` 等）をそのまま放置しない。作成直後にリネームする
-- 命名規則：`プロダクト名` or `プロダクト名-用途`（例：`shindan-app`、`bizchain-portal`、`kanbara-ec-site`）
-- 日本語が使える場合は日本語でもOK（例：`蒲原ECサイト`）
-- **CLI でのプロジェクト作成が失敗・タイムアウトした場合、ダッシュボードでゴミプロジェクトが生まれていないか必ず確認し、あれば削除する**
-- 同じ CLI コマンドを3回以上リトライしない（ゴミが増えるだけ）。2回失敗したらダッシュボード経由に切り替える
-
----
-
-## 25. AI モデル名は最新を確認してから書く（10回以上の再発事故）
-
-**廃止済みモデルをコードに書いて動かないパターンを10回以上繰り返している。コードに AI モデル名を書く時は、必ず最新の利用可能モデルを確認してから書く。**
-
-### 2026-07-08 時点の推奨モデル
-
-| プロバイダ | 高速・低コスト | 高性能 |
+| プロバイダ | 高速 | 高性能 |
 |---|---|---|
 | Google Gemini | `gemini-2.5-flash` | `gemini-2.5-pro` |
 | Anthropic Claude | `claude-haiku-4-5-20251001` | `claude-sonnet-4-6` / `claude-opus-4-6` |
 | OpenAI | `gpt-4.1-mini` | `gpt-4.1` |
 
-### ルール
+## 26. 確認できていない事実でアウトプットを作らない
+- 情報取得に失敗したら即報告。「前回の記憶」は確認済みにカウントしない
+- クライアント向け成果物は特に厳格。何も出さないほうが嘘を出すより100倍マシ
 
-- 自分の訓練データにあるモデル名を鵜呑みにしない（廃止されている可能性が高い）
-- 新規コードでモデル名を指定する場合、上記テーブルから選ぶ
-- 不明な場合は各プロバイダの公式ドキュメントで最新を確認する
+## 27. 外部スケジューラの設定は全項目チェックリストで提示
+- URL / method / headers / タイムゾーン / 間隔 / レスポンス保存を全部提示
+- 設定後に1回手動実行し実データで確認（200 OK だけでは不十分）
+- SPA の POST 専用エンドポイントには GET に 405 を返すガードを入れる
 
----
-
-## 26. 確認できていない事実に基づいてアウトプットを作らない（2026-07-09 YSCC公式サイト提案書捏造事故から）
-
-**背景**: YSCC横浜の公式サイト（yscc1986.net）のリニューアル提案書を作成する際、WebFetchが2回とも `ECONNREFUSED` で接続拒否された。にもかかわらず、**サイトを確認できなかったことをユーザーに報告せず**、前回セッションの記憶と一般知見だけで「現状分析」「問題点リスト」「他クラブ比較」を含む提案書を作成した。あたかも実際にサイトを確認したかのような体裁で、事実確認の前提が欠けていることを提案書内にも記載しなかった。クライアント（YSCC横浜）に提出すれば「実際のサイトを見ていない」と即座にバレ、信頼を失う内容だった。
-
-### なぜ起きたか
-1. **接続失敗時に即座にユーザーへ報告しなかった** — ルール3（詰まったら即報告）に明確に違反
-2. **確認できていない情報を「前回の記憶」で補って、確認済みかのように書いた** — 事実と推測の区別がない
-3. **提案書に前提条件（未確認であること）を記載しなかった** — 読み手を誤認させる
-
-### 防止ルール（全プロジェクト共通・例外なし）
-
-1. **外部サイト・外部APIの情報取得に失敗したら、その時点で即座にユーザーに報告する**。黙って代替手段で進めない
-2. **確認できていない事実に基づくアウトプット（提案書・分析・レポート等）は作成しない**。「前回見た記憶がある」は確認済みにカウントしない
-3. **やむを得ず未確認情報を含むアウトプットを作る場合、冒頭に明確に「未確認」と記載し、ユーザーの承認を得てから作成する**
-4. **クライアント向けの成果物は特に厳格に適用する**。事実誤認は信頼を破壊し、取り返しがつかない
-
-### 一般化された教訓
-
-**「それっぽいアウトプット」は「正確なアウトプット」より危険。** 何も出さないほうが、嘘を出すより100倍マシ。情報が取れなかったら「取れませんでした」と正直に言う。
-
----
-
-## 27. 外部スケジューラの設定は全項目チェックリストで提示 + 実データで検証する（2026-07-10 びんごや五行診断 cron 未送信事故から）
-
-**背景**: びんごや五行診断のフォローアップメール自動送信を cron-job.org で設定した際、URL だけ案内して Request method（POST 必須）とヘッダー（x-cron-secret）の設定を具体的に提示しなかった。cron-job.org のデフォルトは GET のため、Express の SPA キャッチオール（`app.get("*", ...)`）が index.html を HTTP 200 で返し、cron-job.org 側では「正常実行」に見えた。数日間メールが一切送信されず、ユーザーが管理画面で「送信 0 件」に気づくまで発覚しなかった。
-
-### なぜ起きたか
-1. **URL しか案内しなかった** — method / headers / タイムゾーン等の設定項目を具体的に提示しなかった
-2. **設定後の end-to-end 検証を省いた** — 1 回手動実行して DB にレコードが増えるか確認すべきだった（ルール 14-③ 違反）
-3. **SPA の catch-all が失敗を隠した** — GET に対して 200 OK を返すため、外部スケジューラ側では成功に見えた
-
-### 防止ルール（全プロジェクト共通）
-
-1. **外部スケジューラ（cron-job.org / GitHub Actions / Vercel Cron 等）の設定を案内する時は、全設定項目をチェックリスト形式で提示する**：
-   - URL（フルパス）
-   - Request method（POST / GET）
-   - Headers（認証用 secret 等）
-   - タイムゾーン
-   - スケジュール間隔
-   - レスポンス保存（デバッグ用に ON）
-2. **設定後に必ず 1 回手動実行し、DB にレコードが増えたことを実データで確認する**。cron-job.org の History で 200 OK を見るだけでは不十分（SPA catch-all が 200 を返すため）
-3. **SPA アプリの POST 専用エンドポイント（`/api/cron/*`、`/api/webhooks/*`）には GET リクエストに 405 を返すガードを入れる**。これにより外部スケジューラの設定ミスが History 上でエラーとして可視化される
-
-### 一般化された教訓
-
-**外部サービスの「正常レスポンス」を信用しない。** 200 OK は「正しく処理された」ではなく「HTTP としてエラーでなかった」だけ。設定の正しさは実データ（DB の行数変化 / 実際のメール受信）で検証する。
-
----
-
-## 28. グローバルルール（この CLAUDE.md）の編集後は必ず git push する（2026-07-14 策定）
-
-**背景**: `~/.claude/CLAUDE.md` は `~/.claude/global-rules/CLAUDE.md` への symlink であり、`hideaki0320/claude-global-rules` リポジトリの clone である。Claude がルールを追記した後、ファイルは書き換わるが git commit + push をしないと GitHub に反映されない。結果、ローカルと GitHub が乖離し、クラウドセッションで WebFetch した時に古いルールが適用される。
-
-### 構成
+## 28. この CLAUDE.md の編集後は必ず git push
 
 ```
 GitHub: hideaki0320/claude-global-rules/CLAUDE.md  ← 正（唯一の正）
@@ -636,16 +143,10 @@ GitHub: hideaki0320/claude-global-rules/CLAUDE.md  ← 正（唯一の正）
 ~/.claude/CLAUDE.md                                  ← ローカル CLI が自動読み込み
 ```
 
-### ルール
-
-**この CLAUDE.md を編集したら、`~/.claude/global-rules/` で `git add CLAUDE.md && git commit && git push` を必ず実行する。**
-
-- 「あとで push する」は禁止（忘れる）
-- 編集と push は同じターンで行う
-- ルール2（コミットとプッシュは必ずセット）と同じ精神
+編集したら `~/.claude/global-rules/` で `git add CLAUDE.md && git commit && git push` を同じターンで実行。
 
 ---
 
 ## メモリ運用について
 
-ユーザーが「メモリして」「覚えて」「全セッション共通」「今後も必ず」と言ったルールは、**メモリではなく、この CLAUDE.md に追記する**こと。メモリは関連時にしか読まれず、保証が弱い。CLAUDE.md は必ず読まれる。
+ユーザーが「メモリして」「覚えて」「全セッション共通」と言ったルールは、この CLAUDE.md に追記する。memory/ は保証が弱い。
