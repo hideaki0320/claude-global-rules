@@ -622,6 +622,30 @@ push する前に、変更したパターンで **`grep -rn "キーワード" sr
 
 ---
 
+## 28. グローバルルール（この CLAUDE.md）の編集後は必ず git push する（2026-07-14 策定）
+
+**背景**: `~/.claude/CLAUDE.md` は `~/.claude/global-rules/CLAUDE.md` への symlink であり、`hideaki0320/claude-global-rules` リポジトリの clone である。Claude がルールを追記した後、ファイルは書き換わるが git commit + push をしないと GitHub に反映されない。結果、ローカルと GitHub が乖離し、クラウドセッションで WebFetch した時に古いルールが適用される。
+
+### 構成
+
+```
+GitHub: hideaki0320/claude-global-rules/CLAUDE.md  ← 正（唯一の正）
+  ↕ git clone
+ローカル: ~/.claude/global-rules/CLAUDE.md          ← clone
+  ↕ symlink
+~/.claude/CLAUDE.md                                  ← ローカル CLI が自動読み込み
+```
+
+### ルール
+
+**この CLAUDE.md を編集したら、`~/.claude/global-rules/` で `git add CLAUDE.md && git commit && git push` を必ず実行する。**
+
+- 「あとで push する」は禁止（忘れる）
+- 編集と push は同じターンで行う
+- ルール2（コミットとプッシュは必ずセット）と同じ精神
+
+---
+
 ## メモリ運用について
 
 ユーザーが「メモリして」「覚えて」「全セッション共通」「今後も必ず」と言ったルールは、**メモリではなく、この CLAUDE.md に追記する**こと。メモリは関連時にしか読まれず、保証が弱い。CLAUDE.md は必ず読まれる。
