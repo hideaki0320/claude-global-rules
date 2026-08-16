@@ -156,7 +156,17 @@ curl -s "https://api.supabase.com/v1/projects/<REF>/database/query" -H "Authoriz
 - 「残り99999パック」等の内部管理値をユーザーに見せない
 - UI 要素を追加する際は「この情報はユーザーが何の判断に使うか？」を自問。答えがないなら表示しない
 
-## 32. この CLAUDE.md の編集後は必ず git push
+## 33. 新規アプリの Railway セットアップ（初期自動設定）
+- 新しいアプリを Railway にデプロイする時は、以下を自動実行する:
+  1. `preview` ブランチを `main` から作成して push
+  2. Railway に `preview` 環境を `production` から複製して作成
+  3. `preview` 環境のソースブランチを `preview` に設定
+  4. プレビュー用の Railway サービスドメインを生成
+- セットアップスクリプト: `~/.claude/scripts/setup-railway-preview.sh` をプロジェクトディレクトリで実行
+- 運用フロー: `preview` ブランチに push → プレビュー URL で確認 → `main` に push して本番デプロイ
+- 注意: preview 環境の Stripe キーをテストキーに差し替えること（本番キーのままだと実課金される）
+
+## 34. この CLAUDE.md の編集後は必ず git push
 
 ```
 GitHub: hideaki0320/claude-global-rules/CLAUDE.md  ← 正（唯一の正）
