@@ -162,9 +162,17 @@ curl -s "https://api.supabase.com/v1/projects/<REF>/database/query" -H "Authoriz
   2. Railway に `preview` 環境を `production` から複製して作成
   3. `preview` 環境のソースブランチを `preview` に設定
   4. プレビュー用の Railway サービスドメインを生成
+  5. **環境変数に `TZ=Asia/Tokyo` を設定**（production / preview 両方）
 - セットアップスクリプト: `~/.claude/scripts/setup-railway-preview.sh` をプロジェクトディレクトリで実行
 - 運用フロー: `preview` ブランチに push → プレビュー URL で確認 → `main` に push して本番デプロイ
 - 注意: preview 環境の Stripe キーをテストキーに差し替えること（本番キーのままだと実課金される）
+
+## 37. Railway のタイムゾーン設定
+- Railway は UTC で動く。日本時間を扱うアプリは環境変数 `TZ=Asia/Tokyo` を必ず設定する
+- `TZ` は libc の `tzset()` を使うため ICU データに依存しない。設定するだけで `new Date().getHours()` が JST を返す
+- 表示用フォーマットは `Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo' })` を使う
+- 手動オフセット（`getTime() + 9*60*60*1000`）は Date 内部のタイムスタンプが壊れるため新規では使わない
+- 教訓: yscc-ticket で試合時間が何度もずれた事故の原因（UTC + ICU なし環境で toLocaleString が無視された）
 
 ## 35. 不確かなことは調べてから答える（断言も撤回もしない）
 - 確信がないことを聞かれたら、知識で断言するのも、ユーザーに押されて調べずに撤回するのも**両方禁止**
