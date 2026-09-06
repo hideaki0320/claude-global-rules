@@ -212,6 +212,67 @@ Management API で変更したところ GoTrue が起動しなくなり、認証
 **auth config は Management API から触らない。必要ならダッシュボードUIから、
 低トラフィック時に、復旧手順を用意した上で、承認を得てから。**
 
+## 39. マルチテナント／独自ドメインを扱うアプリのドメイン設計
+
+外部から見えるアプリを作る時、**ホスト名の設計を最初に決める**。後から直すと認証・決済に波及して動かせなくなる。
+
+### 39-1. アプリ本体を apex（裸ドメイン）に置かない
+
+```
+正) app.example.com   CNAME → ホスティング先    ← アプリ本体
+    example.com       A     → 転送用サーバー     → 301 で app. へ
+誤) example.com       A     → ホスティング先のIP直打ち  ← 時限爆弾
+```
+
+DNSの仕様上 **apex には CNAME を置けない**（NS/MX/TXT と共存できない）。
+そのため apex をRailway等に向けるには **A レコードでIPを直接書く**しかなく、
+ホスティング側がIPを変えた瞬間に落ちる。CNAME は「名前」を指すので自動追従する。
+
+例外: Vercel（anycast）、Cloudflare（CNAME flattening）、ALIAS/ANAME対応DNS を使う場合は
+apex でも安全。**Xserver + Railway の組み合わせでは不可**なので、必ずサブドメインに置く。
+
+### 39-2. 予約サブドメインをテナント判定から除外する
+
+「知らないホストは顧客のドメイン」とする catch-all 設計では、
+`www` などが「未登録の顧客」と判定されて 404 になる。Vercelの公式実装
+（Platforms Starter Kit）も `rootDomain` と `www.rootDomain` を明示的に除外している。
+
+```ts
+const RESERVED = ['www', 'app', 'admin', 'api', 'mail', 'static', 'cdn', 'blog'];
+const sub = host.replace(`.${rootDomain}`, '');
+const isTenant = host.endsWith(`.${rootDomain}`) && !RESERVED.includes(sub);
+```
+
+除外していないと、DNS側で www を用意しても404にしかならず、
+**「apexが壊れたら www に逃がす」という定石が使えなくなる。**
+
+### 39-3. 推奨構成
+
+```
+example.com          A     転送サーバー       → 301 → app.example.com
+www.example.com      CNAME ホスティング先     → 301 → app.example.com（予約）
+app.example.com      CNAME ホスティング先     アプリ本体（APP_URL はここ）
+*.example.com        CNAME ホスティング先     テナント用
+customer.com         CNAME ホスティング先     顧客の独自ドメイン
+```
+
+**ホスティング先のIPがどこにも書かれていない**のが要点。
+
+### 39-4. 教訓: 2026-09-06 veloraxa.com が半日停止
+
+Railway がエッジを `66.33.22.0/23` から `69.46.46.0/24` に移設。
+Railwayに載る15ドメインのうち、**apex にアプリ本体を置いていた veloraxa.com だけ**が
+A レコードでIP直打ちだったため取り残され、403 になった。他14件はCNAMEで無傷。
+
+さらに `www` が予約されておらず「未登録テナント」として404を返す設計だったため、
+www に逃がす復旧策も使えなかった。`NEXT_PUBLIC_APP_URL` を変えれば直せるが、
+認証コールバックとStripeの戻りURL 11箇所に波及するため断念し、IP直打ちのまま復旧した。
+
+**ドメイン障害では、DNSの外形調査より先にアプリのホスト判定コード
+（middleware.ts 等）を読むこと。** 読まずにDNS変更を提案し、403を000に悪化させた。
+
+---
+
 ## 34. この CLAUDE.md の編集後は必ず git push
 
 ```
