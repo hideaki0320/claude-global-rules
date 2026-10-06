@@ -148,6 +148,10 @@ curl -s "https://api.supabase.com/v1/projects/<REF>/database/query" -H "Authoriz
 - 新規テーブルは CRUD 4ポリシーを同時定義。不要なものはコメントで「禁止」と明記
 - update/delete は `.select()` chain で更新行数を確認（RLS 違反は silent fail）
 - コミット前に `pg_policies` で対応ポリシーがあるか確認
+- **仕組みで担保済み**（2026-10-07〜）: 全Supabaseプロジェクトに event trigger `ensure_rls` を導入済み＝新規テーブルは作成時に自動で RLS 有効。
+  GitHub `hideaki0320/supabase-security-guard` が毎日 08:00 JST に全プロジェクトを点検し、ERROR / ensure_rls 未導入を Issue で通知
+- **新しい Supabase プロジェクトを作ったら最初に** `supabase-security-guard/sql/ensure_rls.sql` を実行する
+- 教訓: 2026-10-03 bingoya-gogyou の申込テーブル（氏名・電話・住所）が RLS 無効で公開状態。CREATE TABLE に RLS を書き忘れた
 
 ## 16. git push 前のサブエージェントチェック
 
