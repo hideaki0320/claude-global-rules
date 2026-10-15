@@ -177,6 +177,8 @@ curl -s "https://api.supabase.com/v1/projects/<REF>/database/query" -H "Authoriz
 
 ## 20. AskUserQuestion ツール禁止
 - モーダルが文脈を隠すため使用禁止。テキストで列挙して実装に進む
+- **アプリの「次の一手」ボックスに質問やボタンを出すのも同じく禁止**（wrap_up の ask / actions を使わない）。
+  選択肢は必ず本文に番号付きで書く。教訓: 2026-10-15 にボックスで選択肢を出し、中森から指摘された
 - 例外：本番 DB DROP 等の取り返しがつかない破壊的操作のみ
 
 ## 21. 新機能・修正は横展開チェック
