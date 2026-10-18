@@ -32,6 +32,7 @@ description: Railway を操作するときの手順。新しいアプリを Rail
 - auto-deploy の無効化・Queue の全キャンセルなどの前に、SERVING の deployment ID を記録する
 - 「ビルドを止めたい」が目的なら、サービスの稼働を止める操作は選ばない
 - auto-deploy の無効化は「再有効化 ＋ 手動デプロイ」とセットで行う
+- 教訓：2026-05-14 IntraCanvas の停止事故から
 
 ## 環境変数・ドメイン・スケール
 
