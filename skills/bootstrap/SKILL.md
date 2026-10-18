@@ -26,8 +26,34 @@ description: 新規プロジェクトの初期セットアップを自動化す�
 3. docs/ ディレクトリが既にあれば保護
 
 ### Step 3: .gitignore 整備
-1. .env*, .DS_Store, .claude/, .vscode/, .idea/ を追加
-2. 既に含まれている項目はスキップ
+1. .env*, .DS_Store, .vscode/, .idea/ を追加
+2. `.claude/` は丸ごと除外しない。次の3行にする（全体ルールのフックはリポに入れる必要があるため）
+   ```
+   .claude/*
+   !.claude/settings.json
+   !.claude/hooks/
+   ```
+3. 既に含まれている項目はスキップ
+
+### Step 3.5: 全体ルールのフックを入れる（クラウドでも全体ルールとスキルを読むため）
+1. `mkdir -p .claude/hooks && cp ~/.claude/global-rules/hooks/cloud-session-start.sh .claude/hooks/global-rules.sh`
+2. `.claude/settings.json` に SessionStart のフックを書く（既にあれば hooks.SessionStart に追記する）
+   ```json
+   {
+     "hooks": {
+       "SessionStart": [
+         {
+           "hooks": [
+             { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/global-rules.sh\" 1", "timeout": 30 },
+             { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/global-rules.sh\" 2", "timeout": 30 }
+           ]
+         }
+       ]
+     }
+   }
+   ```
+3. `"disableAllHooks": true` は入れない（入れるとこのフックも動かない）
+4. Step 6 の初期コミットにこの2ファイルを含める
 
 ### Step 4: Supabase プロジェクト作成（--skip supabase で省略可）
 1. Supabase Management API でプロジェクト作成
@@ -43,6 +69,7 @@ description: 新規プロジェクトの初期セットアップを自動化す�
 3. API キー取得
 4. lib/supabase.ts 作成（PUBLISHABLE_KEY 使用）
 5. lib/types.ts 作成（空の型定義テンプレート）
+6. **最初に** `supabase-security-guard/sql/ensure_rls.sql` を実行する（新規テーブルを自動で RLS 有効にする。スキル `supabase-ops`）
 6. .env.local 作成（ローカル開発用）
 7. .env.example 作成（テンプレート）
 8. db/migrations/ ディレクトリ作成
