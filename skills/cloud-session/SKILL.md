@@ -17,7 +17,7 @@ description: クラウド環境（Claude Code on the web。~/.claude/CLAUDE.md �
 
 ## やること
 
-1. **グローバルルールを WebFetch で全文取得する**：
+1. 各リポの SessionStart フック（`.claude/hooks/global-rules.sh`）が、開始時にグローバルルール（前半・後半）とスキルを読み込む。**読み込めていない（「取得できませんでした」と出た、またはフックが無いリポ）ときだけ、WebFetch で全文取得する**：
    `https://raw.githubusercontent.com/hideaki0320/claude-global-rules/main/CLAUDE.md`
    取得できなければ作業前に中森へ報告する（SessionStart フックが整備済みのリポでは自動で文脈に載る）。
    スキルが要る場面では `.../main/skills/<名前>/SKILL.md` も同様に取得する

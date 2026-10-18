@@ -12,10 +12,11 @@
 | `notes/` | 期限つきの状況メモ（ルールではない） | 必要なときに読む |
 | `agents/` | サブエージェントの定義 | `~/.claude/agents/` |
 | `MIGRATION_MAP.md` | 整理前のルール番号（旧0〜47）との対応表 | 参照用 |
-| `global.md` ＋ `.github/workflows/sync-claude-md.yml` | 各リポの `.claude/rules/global.md` に配る要約版 | **見直し中**。global.md を変えると対象リポの main にコミットされ、Railway の本番が再デプロイされる |
+| `hooks/cloud-session-start.sh` | クラウドで GitHub の最新ルール・スキルを読み込む | 各リポの `.claude/hooks/global-rules.sh` に同じものを置き、リポの `.claude/settings.json` の SessionStart から呼ぶ（2026-10-18 に26リポ中25リポへ導入。intracanvas はフック無効の設定のため未導入） |
+| `global.md` ＋ `.github/workflows/sync-claude-md.yml` ＋ `sync-targets.txt` | 旧方式の配布（要約版を各リポの `.claude/rules/global.md` に配る） | **2026-10-18 に停止**（Actions を無効化）。各リポの `.claude/rules/global.md` も削除済み |
 
 ## 編集
 
 - 編集 → commit → push。次に始まるデスクトップのセッションから反映（開始時に自動 pull）
 - 走っているセッションには届かない。必要なら内容を伝える
-- クラウド（Claude Code on the web）は `~/.claude/` を読まない。クラウドへの配り方は見直し中
+- クラウド（Claude Code on the web）は `~/.claude/` を読まない。各リポのフックが、開始時に GitHub の最新を読み込む（このリポに push すれば、次のクラウドのセッションから反映）
