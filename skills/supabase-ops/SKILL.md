@@ -19,7 +19,11 @@ curl -s "https://api.supabase.com/v1/projects" -H "Authorization: Bearer $TOKEN"
 curl -s "https://api.supabase.com/v1/projects/<REF>/database/query" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"query":"select ..."}'
 ```
 
-- **auth config（セッション・OTP 有効期限・レート制限）は Management API で触らない。** 必要ならダッシュボードの画面から、低トラフィック時に、復旧手順を用意し、承認を得てから
+- **auth config（セッション・OTP 有効期限・レート制限・匿名ログインなど）を変えるとき**：画面でも API でもよい（使えるなら画面を優先）。どちらでも次の4つを守る
+  1. 変える前の設定を保存する（API なら `GET https://api.supabase.com/v1/projects/<REF>/config/auth` の結果をローカルに JSON で保存）
+  2. 1回に変えるのは1項目だけ（API なら PATCH の本文にその項目だけを入れる）。承認を得てから。利用の少ない時間に
+  3. 変えた直後に `https://<REF>.supabase.co/auth/v1/health` が 200 を返すか（`apikey` ヘッダーに publishable key を付ける。要否は未確認）、実際にログインできるかを確かめる
+  4. だめなら、保存した値にすぐ戻す
   - 教訓：2026-08-20 yscc-ticket で `sessions_inactivity_timeout` / `mailer_otp_exp` を API で変えたら GoTrue が起動せず、認証 API が全部 503。ログインもチケット購入も約1時間50分停止。変更後に本番を確認しなかったため気づくのが遅れた
 
 ## 本番 DB への書き込み
