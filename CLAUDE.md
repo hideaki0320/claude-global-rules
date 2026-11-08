@@ -103,6 +103,7 @@
 - ログインが要るアプリには、ログイン後の画面を手元で確かめる手段を用意する（基本は `/api/dev-login`。静的書き出しなど `/api` を置けないアプリは別の手段でよい）。`NODE_ENV` で認証を飛ばす作りは禁止。手順はスキル `dev-login` [旧28]
 - Supabase のキーは `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（`NEXT_PUBLIC_SUPABASE_ANON_KEY` ではない）[旧9]
 - Supabase の新しいテーブルは CRUD 4ポリシーを同時に作る。update／delete は `.select()` で行数を確かめる [旧15]
+- **Supabase の API（supabase-js・REST）は1回で最大1,000行しか返さない。`.limit(50000)` と書いても黙って1,000行で切られ、エラーも出ない。** 件数・合計・日別などの集計は SQL（`count: "exact", head: true`、RPC、ビュー）で数え、行を全部使うときは `.range()` で1,000行ずつ取り切る。`.select()` で一覧を取るコードを書く・直すときは、1,000行を超えうるかを必ず考える（2026-11-08 E-team AI のアクセス解析が「ちょうど1,000」で止まっていた。実際は約2,500）
 - 日本時間を扱うアプリは Railway に `TZ=Asia/Tokyo`。表示は `Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo' })`、手動で9時間足さない [旧37]
 - **反応の速さ（サーバーと DB の往復の数×距離）を必ず意識する**：Supabase が東京なら Railway の地域はシンガポール（`railway scale southeast-asia=1 us-west=0`。初期値のアメリカのままにしない）。ログインの確認は `getClaims()`（非対称鍵なら往復0）にし、proxy／middleware とページで `getUser()` を重ねない（メール確認済みなど厳密さが要る操作だけ `getUser()`）。待たなくてよい問い合わせは `Promise.all` で同時に投げる（2026-10-25 ichizoku でこの3つで体感が数倍速くなった）
 - アプリ本体を apex（裸ドメイン）に置かない。予約サブドメイン（www など）をテナント判定から外す。ドメイン障害ではまずアプリのホスト判定コードを読む [旧39]
