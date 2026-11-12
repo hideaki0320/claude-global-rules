@@ -15,7 +15,8 @@ description: Railway を操作するときの手順。新しいアプリを Rail
 4. プレビュー用の Railway サービスドメインを生成する
 5. **環境変数 `TZ=Asia/Tokyo` を production・preview の両方に設定する**
 
-- スクリプト：プロジェクトのフォルダで `~/.claude/scripts/setup-railway-preview.sh` を実行
+- スクリプト：プロジェクトのフォルダで `~/.claude/scripts/setup-railway-preview.sh` を実行（正本はこのリポの `scripts/`。`~/.claude/scripts/` は symlink）
+- preview のデプロイ元は `railway environment edit ... source.branch` では変わらない（「設定しました」と出るが main のまま）。GraphQL の `deploymentTriggerUpdate` で変え、`deploymentTriggers` を読み直して確かめる。スクリプトはこの方式（2026-11-12 maltese-site で main への push が preview にも出ていた）
 - 運用：`preview` に push → プレビュー URL で確認 → `main` に push して本番
 - **preview 環境の Stripe キーはテストキーに差し替える**（本番キーのままだと実際に課金される）
 
