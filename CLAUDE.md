@@ -108,6 +108,7 @@
 - **Supabase の API（supabase-js・REST）は1回で最大1,000行しか返さない。`.limit(50000)` と書いても黙って1,000行で切られ、エラーも出ない。** 件数・合計・日別などの集計は SQL（`count: "exact", head: true`、RPC、ビュー）で数え、行を全部使うときは `.range()` で1,000行ずつ取り切る。`.select()` で一覧を取るコードを書く・直すときは、1,000行を超えうるかを必ず考える（2026-11-08 E-team AI のアクセス解析が「ちょうど1,000」で止まっていた。実際は約2,500）
 - 日本時間を扱うアプリは Railway に `TZ=Asia/Tokyo`。表示は `Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo' })`、手動で9時間足さない [旧37]
 - **反応の速さ（サーバーと DB の往復の数×距離）を必ず意識する**：Supabase が東京なら Railway の地域はシンガポール（`railway scale southeast-asia=1 us-west=0`。初期値のアメリカのままにしない）。ログインの確認は `getClaims()`（非対称鍵なら往復0）にし、proxy／middleware とページで `getUser()` を重ねない（メール確認済みなど厳密さが要る操作だけ `getUser()`）。待たなくてよい問い合わせは `Promise.all` で同時に投げる（2026-10-25 ichizoku でこの3つで体感が数倍速くなった）
+- **Railway など自分のサーバーで Next.js を動かすときは、作る前に公式のセルフホストの説明（`node_modules/next/dist/docs/01-app/02-guides/self-hosting.md`）を読み、書かれている設定を最初から入れる**：`deploymentId: process.env.RAILWAY_GIT_COMMIT_SHA`（反映の切り替わりで古いページが消えた CSS を読みに行き、崩れるのを防ぐ）。Railway の `RAILWAY_DEPLOYMENT_DRAINING_SECONDS`（初期値0＝古いサーバーを即停止）とレプリカ数・地域も確かめる。`fill` の画像は親に大きさを直接書き、CSS が読めなくても画面いっぱいに広がらないようにする。本番への反映は利用者の少ない時間にまとめる（2026-11-23 E-team AI で私が昼に何度も反映し、切り替わりに当たったブログが崩れた。クライアントに送る直前だった）
 - アプリ本体を apex（裸ドメイン）に置かない。予約サブドメイン（www など）をテナント判定から外す。ドメイン障害ではまずアプリのホスト判定コードを読む [旧39]
 - AI モデル名は、書く前に必ず各社の公式で最新を確認する（Claude はスキル `claude-api`）。覚えている名前を書かない [旧25]
 - コンテンツの「GEO」は必ず「AIO・GEO」と書く [旧44]
