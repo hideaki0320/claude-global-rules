@@ -15,3 +15,10 @@
 - ファイアウォールをオンにしても、「署名付きアプリを自動で許可」が有効なので OrbStack への接続はおそらく通る（未検証）。**効く対策は、待ち受けを 127.0.0.1 に限定すること**（Supabase 公式：専用の Docker ネットワークで 127.0.0.1 にバインド）。対応は中森の判断待ち。neo-relay は、スマホ実機から Wi-Fi 経由で接続しているか未確認（接続していれば限定すると使えなくなる）
 - **バックアップ**：`~/Backups/db/`（権限 700/600。Git・クラウドには入れない）に pg_dump（-Fc）で保存。初回 2026-10-12 21:39（i-tec24・neo-relay の両方）。戻すときは `pg_restore`。それまではデータが OrbStack の中にしか無かった
 - i-tec24 の起動スクリプトで毎回自動バックアップする案は中森の判断待ち
+
+## 2026-11-28 削除した
+- i-tec24 は Railway（i-tec24-demo-production）＋クラウドの Supabase（wshtbynhuszazobuxhdc、物件721件）、NEO-RELAY は Railway＋クラウドの Supabase（hzqgbshnawzdaizybqeg）に移っていた。手元の OrbStack の中身は古い写し（i-tec24 は物件563件・property_billing なし）
+- 消す前に `~/Backups/db/` に pg_dump（i-tec24-demo・neo-relay）と Storage の写し（volumes_20261128-1529）を取った
+- `orb reset` → アプリ削除 → `~/.orbstack` 削除 → `.ssh/config`・`.bash_profile` の OrbStack の行を削除（.bak-orbstack を残した）。約10GB 空いた
+- i-tec24 の `scripts/show-start.sh`（手元で見せる用）は OrbStack 前提なので、もう使えない
+- `/usr/local/bin` の docker・orb などのリンク（root 所有）は残っている。消すには `sudo rm`

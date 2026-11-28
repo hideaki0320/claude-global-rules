@@ -118,7 +118,7 @@
 
 ## 7. 期限つきのメモ
 
-- OrbStack の Pro 試用は **2026-11-01 ごろまで**。10-25 以降に OrbStack を使う作業をするときは、先に中森へ期限を知らせる。詳細は `notes/orbstack.md` [旧47]
+- OrbStack は 2026-11-28 に削除した（i-tec24・NEO-RELAY は Railway＋クラウドの Supabase に移行済み。手元の DB の写しは `~/Backups/db/*_20261128-1529.dump`）。手元で Docker が要るときは、入れる前に中森に確認する。経緯は `notes/orbstack.md` [旧47]
 
 ---
 
